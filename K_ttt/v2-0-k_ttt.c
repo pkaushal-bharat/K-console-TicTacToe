@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 /* Hello, I am Prakash K. This is my C game project.
-First, I would like to thank Gautam and Suraj 
+First, I would like to thank my PPS professor Deepak Kr. Chaudhary...
 for their goodwill and genuine help for this project.
  I thank my friends for motivating and trying out this game.
  Finally, I am grateful for the feedback and contribution for
@@ -12,9 +12,9 @@ Project: Katttam-kuttta® in C
 Github: pkaushal-bharat/C-Projects-by-K/
 Description: TicTacToe like game in C which you can run without graphics.h
 Repo link: https://github.com/pkaushal-bharat/C-Projects-by-K/
-Time-spent: 3 Days
-Version: 2.०
-Last updated: Tuesday, 24 August 2021
+Time-spent: 4 Days
+Version: 2.01
+Last updated: Saturday, 28 August 2021
 */
 void intro();
 int start_gm();
@@ -29,6 +29,7 @@ short unsigned int gm_input(int);
 short unsigned int gm_input_chk(int);
 int gm_status();
 void gm_result(int);
+void gm_log();
 int play_again();
 
 void keypress(void);
@@ -49,14 +50,25 @@ char m[9];
 short int gm_mode;
 const char ch0 = '_', ch1 = 'X', ch2 = 'O'; //choices
 const int mode_pvc = 1, mode_pvp = 2;       // game modes: 1 is comp, 2 is pvp
+FILE *gm_log_file;
+unsigned short int pl1 = 1, pl2 = 2, status, string_v_in[9] = {0};
+unsigned short int tot_pl1_win = 0, tot_pl2_win = 0, tot_draw = 0, tot_gm = 0;
 
-unsigned short int pl1 = 1, pl2 = 2;
 int main()
 {
     intro();
+    time_t t; // not a primitive datatype
+    time(&t);
+    gm_log_file = fopen("k_ttt_.dat", "a");
+    if (gm_log_file != NULL)
+        fprintf(gm_log_file, "START:%s", ctime(&t));
     srand(time(0));
     if (start_gm() == 1)
         game();
+    time(&t);
+    if (gm_log_file != NULL)
+        fprintf(gm_log_file, "END:%s\n", ctime(&t));
+    fclose(gm_log_file);
     return 0;
 }
 void intro()
@@ -103,7 +115,7 @@ int start_gm()
 void about()
 {
     col_purple();
-    printf("/*Hello, I am Prakash K. This is my C game project.\nFirst, I would like to thank my friends for motivation for this project.\nFinally, I am grateful for your feedback and contribution for\nmaking this game better over time. \n\n\nProject: Katttam-kuttta® in C \nDescription: TicTacToe like game in C which you can run everywhere \nTime-spent: 2 Days\nVersion: 2.0(2.०)\nLast updated: Tuesday, 24 August 2021\n*/");
+    printf("/*Hello, I am Prakash K. This is my C game project.\nFirst, I would like to thank my friends for motivation for this project.\nFinally, I am grateful for your feedback and contribution for\nmaking this game better over time. \n\n\nProject: Katttam-kuttta® in C \nDescription: TicTacToe like game in C which you can run everywhere \nTime-spent: 4 Days\nVersion: 2.01\nLast updated: 28 August 2021\n*/");
     col_reset();
     keypress();
 }
@@ -115,8 +127,11 @@ void game()
         play_gm();
     } while (play_again() == 1);
     {
-        col_purple();
+        col_yellow();
+        printf("\nTotal games: %d", tot_gm);
+        printf("\nWon by X:%d\tWon by 0: %d\tDraw:%d", tot_pl1_win, tot_pl2_win, tot_draw);
         printf("\nThank you for playing. Please share your suggestions💭 to the developer by mail....\n");
+        col_purple();
         printf("\nGet the latest version of Katttam-kuttta® from my Github repo🙂 \nand give it a star⭐");
         printf("\nat https://github.com/pkaushal-bharat/C-Projects-by-K");
         col_reset();
@@ -151,15 +166,18 @@ void ref_gm()
 }
 void play_gm()
 {
-    unsigned short int cell = 0; //the current cell box
-    unsigned short int gm_round = 1, pl_turn = pl1, status = 0; //game round and turns
+    unsigned short int cell = 0;                    //the current cell box
+    unsigned short int gm_round = 1, pl_turn = pl1; //game round and turns
+    status = 0;                                     //game status is 0 or continue
     reset_m();
+    tot_gm++;
     if (gm_mode == 1)
         pl2 = 0;
     do
     {
         show_mat(gm_round, pl_turn);
-        cell = gm_input(pl_turn); // cell on which we have to operate
+        cell = gm_input(pl_turn);             // cell on which we have to operate
+        string_v_in[gm_round - 1] = cell + 1; //updating recordstring
         gm_round++;
         if (pl_turn == pl1)
         {
@@ -175,12 +193,14 @@ void play_gm()
     } while (status == 0);
     show_mat(0, 0);
     gm_result(status);
+    gm_log();
 }
 void reset_m()
 {
     for (short i = 0; i < 9; i++)
     {
         m[i] = ch0;
+        string_v_in[i] = 0;
     }
 }
 void show_mat(int round, int turn)
@@ -223,9 +243,10 @@ void show_mat(int round, int turn)
 short unsigned int gm_input(int turn)
 {
     short unsigned int v_in = 0; // only accept valid input
-    do
+
+    if (turn != 0) //manual
     {
-        if (turn != 0)
+        do
         {
             //clearIN();
             if (scanf(" %hu", &v_in) == 1)
@@ -240,15 +261,38 @@ short unsigned int gm_input(int turn)
             }
             else
                 clearIN();
-        }
-        else
+        } while (1);
+    }
+    else //computer
+    {
+        for (int i = 1; i; ++i)
         {
-            v_in = rand() % 10;
+            v_in = (rand() % 9) + 1;
             v_in = gm_input_chk(v_in);
             if (v_in < 10)
-                return v_in;
+            {
+                if (i <= 500)
+                {
+                    m[v_in] = ch2;
+                    int new_status = gm_status();
+                    m[v_in] = ch0;
+                    if (new_status > 0)
+                        return v_in;
+                }
+                if (i > 500 && i <= 1000)
+                {
+                    m[v_in] = ch1;
+                    int new_status = gm_status();
+                    m[v_in] = ch0;
+                    if (new_status > 0)
+                        return v_in;
+                }
+                if (i > 1000)
+                    return v_in;
+            }
         }
-    } while (1);
+    }
+    return 11;
 }
 short unsigned int gm_input_chk(int v_in)
 {
@@ -314,6 +358,7 @@ void gm_result(int f_status)
     {
     case 1:
         col_red();
+        tot_pl1_win++;
         if (gm_mode != 1)
             printf("Player %d with %c won.. Better luck next time, player %d", pl1, ch1, pl2);
         else
@@ -322,6 +367,7 @@ void gm_result(int f_status)
         break;
     case 2:
         col_blue();
+        tot_pl2_win++;
         if (gm_mode != 1)
             printf("Player %d with %c won..\n Better luck next time, player %d", pl2, ch2, pl1);
         else
@@ -330,6 +376,7 @@ void gm_result(int f_status)
         break;
     case 3:
         col_green();
+        tot_draw++;
         printf("You played well, but the match was draw\n Play again to decide the champion.");
         col_reset();
         break;
@@ -355,11 +402,30 @@ int play_again()
     }
     return 0;
 }
+void gm_log()
+{
+    if (gm_log_file == NULL)
+    {
+        printf(".*.");
+    }
+    else
+    {
+        time_t t; // not a primitive datatype
+        time(&t);
+        fprintf(gm_log_file, "%d-%d:%s{", gm_mode, status, ctime(&t));
+        for (int i = 0; i < 9; i++)
+            fprintf(gm_log_file, "%c", m[i]);
+        fprintf(gm_log_file, "} #");
+        for (int i = 0; i < 9; i++)
+            fprintf(gm_log_file, "%i", string_v_in[i]);
+        fprintf(gm_log_file, "\n");
+    }
+}
 
 void keypress(void)
 {
     clearIN();
-    char nouse = getchar();
+    getchar();
 }
 void clearIN(void)
 {
