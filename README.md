@@ -1,5 +1,5 @@
-# C-Projects-by-K
-I try to get familiar with Github and do some meaningful projects here.
+# K-console-TicTacToe
+Hey there, this is my first year project on creating an interactive TicTacToe game:
 
 <ul>
   <li><b>K's TicTacToe</b> tictactoe game in c using The standard library only.
@@ -12,3 +12,5 @@ I try to get familiar with Github and do some meaningful projects here.
     <li> Lightweight infinite game</li>
     </ol>
   </li>
+
+Please give me a star, if you like it:-)
